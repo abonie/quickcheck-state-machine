@@ -26,6 +26,8 @@
 
 * Jepsen (Kyle "aphyr" Kingsbury)
 
+[://]: https://thenewstack.io/chaos-tools-and-techniques-for-testing-the-tidb-distributed-newsql-database/
+
 ---
 
 # Overview
@@ -84,37 +86,42 @@
 
 # Example: CRUD application
 
-* ```haskell
-    data Action = Create | Read | Update String | Delete
-    ```
-* ```haskell
-    type Model = Maybe String
-    ```
-* ```haskell
-    transition :: Model -> Action -> Model
+```haskell
+data Action = Create | Read | Update String | Delete
+
+type Model = Maybe String
+
+transition :: Model -> Action -> Model
+transition _m Create     = Just ""
+transition  m Read       = m
+transition _m (Update s) = Just s
+transition _m Delete     = Nothing
 ```
-
-* XXX:
-
-[//]: ![State machine model](image/asm.jpg)\
 
 ---
 
-# The `quickcheck-state-machine` library
+# Example: CRUD application (continued)
 
-* Use abstract state machine to model the program
-    - A model datatype, and an initial model
-    - A datatype of actions (things that can be happen in the system we are modelling)
-    - A transition function that given an action advances the model to the
-      next state
+```haskell
+data Response = Unit () | String String
 
-* A semantics function that takes an action and runs it against the real system
+semantics :: Action -> IO Response
+semantics Create     = Unit   <$> httpReq POST   url
+semantics Read       = String <$> httpReq GET    url
+semantics (Update s) = Unit   <$> httpReq PUT    url s
+semantics Delete     = Unit   <$> httpReq DELETE url
 
-* Use pre- and post-conditions on the model to make sure that the model agrees
-  with reality
+postcondition :: Model -> Action -> Response -> Bool
+postcondition (Just m) Read (String s) = s == m
+postcondition _m       _act _resp      = True
+```
 
-* Use QuickCheck's generation to conduct experiments that validate the
-  model
+---
+
+# State machine modelling as a picture
+
+![State machine model](../bobkonf-2018/image/asm.jpg)\
+
 
 ---
 
@@ -182,8 +189,22 @@ assert(file_fits("tmpfile") == false);
 
 # "Real world" examples
 
-* libraft
-* Cardano wallet
+* Adjoint's
+  [libraft](https://github.com/adjoint-io/raft/blob/master/test/QuickCheckStateMachine.hs)
+    + Simplified think of it as distributed and fault-tolerant "CRUD applicaiton
+      example"
+    + Injected faults: killing nodes and network traffic loss
+    + Problems found (that the
+      [dejafu](https://hackage.haskell.org/package/dejafu) tests didn't find):
+        - XXX: ?
+
+
+* IOHK's Cardano wallet
+    + File system mock tested against real file system
+    + Database tests built on top of file system mock
+    + Fault are injected into the file system mock
+    + Problems found:
+        - XXX: ?
 
 ---
 
@@ -198,6 +219,17 @@ assert(file_fits("tmpfile") == false);
 ---
 
 # Conclusion
+
+* Fault injection causes exceptional circumstances
+
+* Exceptional circumstances are by definition rare and hence less likely to be
+  tested
+
+* Exceptional circumstances are often edge cases and hence less likely to be
+  considered when writing the program
+
+* By combining fault injection with property based testing we force ourselves to
+  consider these exceptional cases
 
 ---
 
