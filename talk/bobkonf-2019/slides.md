@@ -20,16 +20,6 @@
 
 ---
 
-# Related work
-
-* Chaos engineering (Netflix)
-
-* Jepsen (Kyle "aphyr" Kingsbury)
-
-[://]: https://thenewstack.io/chaos-tools-and-techniques-for-testing-the-tidb-distributed-newsql-database/
-
----
-
 # Overview
 
 * Property based testing (pure/side-effect free/stateless programs)
@@ -210,23 +200,37 @@ assert(file_fits("tmpfile") == false);
 
 # Further work
 
-* Fault injection library for Haskell, c.f. FreeBSD's failpoints and the Rust
-  library `pingcap/fail-rs`
+* Fault injection library for Haskell, c.f.:
+    + FreeBSD's [failpoints](https://www.freebsd.org/cgi/man.cgi?query=fail)
+    + Rust's [`fail-rs`](https://github.com/pingcap/fail-rs) crate
+    + Go's [`gofail`](https://github.com/etcd-io/gofail) library
 
 * [Jepsen](https://jepsen.io/)-like tests: parallel state machine testing with
   fault injection and linearisability
 
 ---
 
+# Related work
+
+* Chaos engineering (Netflix)
+
+* Jepsen (Kyle "aphyr" Kingsbury)
+
+[://]: https://thenewstack.io/chaos-tools-and-techniques-for-testing-the-tidb-distributed-newsql-database/
+
+---
+
 # Conclusion
 
-* Fault injection causes exceptional circumstances
+* Fault injection can help causes exceptional circumstances
 
 * Exceptional circumstances are by definition rare and hence less likely to be
   tested
 
 * Exceptional circumstances are often edge cases and hence less likely to be
   considered when writing the program
+
+* Exceptional circumstances will nevertheless occur in production
 
 * By combining fault injection with property based testing we force ourselves to
   consider these exceptional cases
