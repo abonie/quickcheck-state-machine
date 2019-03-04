@@ -25,9 +25,11 @@
 * Property based testing (pure/side-effect free/stateless programs)
 * State machine modelling (monadic/has side-effect/stateful programs)
 * Fault injection (provoking exceptions)
-* Using the
-  [`quickcheck-state-machine`](https://github.com/advancedtelematic/quickcheck-state-machine)
-  Haskell library, but the principles are general
+* Examples using
+    + [`quickcheck-state-machine`](https://github.com/advancedtelematic/quickcheck-state-machine)
+      Haskell library for property based testing
+    + `libfiu` for fault injection
+    + The principles are general and tool independent
 
 ---
 
@@ -173,28 +175,97 @@ assert(file_fits("tmpfile") == false);
 
 ---
 
-# Demo, "toy" example
+# Examples
+
+* Over-the-air updates of cars (my workplace)
+* Adjoint's
+  [libraft](https://github.com/adjoint-io/raft/blob/master/test/QuickCheckStateMachine.hs)
+* IOHK's blockchain [database](https://www.well-typed.com/blog/2019/01/qsm-in-depth/)
 
 ---
 
-# "Real world" examples
+# Over-the-air updates
+
+```haskell
+data Action = Check | Download | Install | Reboot
+            | Inject Fault | DisableFaultInject
+
+data Fault = Network | Kill | GCIOPause | ProcessPrio
+           | ReorderReq | SkewClock | RmFile | DamageFile
+           | Libfiu (Either Syscall Failpoint)
+
+inject :: Fault -> IO () -- Pseudo code
+inject Network     = call "iptables -j DROP $IP"
+inject Kill        = call "kill -9 $PID"
+inject GCIOPause   = call "killall -s STOP $PID"
+inject ProcessPrio = call "renice -p $PID"
+inject ReorderReq  = call "some proxy"
+inject SkewClock   = call "faketime $SKEW"
+inject RmFile      = call "rm -f $FILE"
+inject DamageFile  = call "echo 0 >> $FILE"
+inject Libfiu      = call "libfiu-ctrl $FAULT $PID"
+
+```
+
+---
+
+# Over-the-air updates (continued)
+
+```haskell
+data Model = Model { fault :: Maybe Fault, ... }
+
+transition :: Model -> Action -> Model
+transition m (Fault f)          = m { fault = Just f }
+transition m DisableFaultInject = m { fault = Nothing }
+transition m ...
+
+postcondition :: Model -> Action -> Response -> Bool
+postcondition m act resp = case (fault m, act) of
+  (Nothing,      Download) -> resp == Ok
+  (Just Network, Download)
+      -> resp == TimeoutError
+  (Just (Libfiu (Right InstallFailure)), Install)
+      -> resp == FailedToInstallError
+  ...
+```
+
+---
+
+# Over-the-air updates (continued 2)
+
+```haskell
+prop_reliable :: Property
+prop_reliable = forAllActions $ \acts -> do
+  (device, update) <- setup
+  schedule update device
+  let model = initModel { device = Just device }
+  (model', result) <- runActions acts model
+  assert (result == Success) -- Post-conditions hold
+  runActions [ DisableFaultInject
+             , Check, Download, Install, Reboot ]
+             model'
+  update' <- currentUpdate device
+  assert (update' == update)
+```
+
+---
+
+# Adjoint's `libraft`
 
 * Adjoint's
   [libraft](https://github.com/adjoint-io/raft/blob/master/test/QuickCheckStateMachine.hs)
     + Simplified think of it as distributed and fault-tolerant "CRUD applicaiton
       example"
     + Injected faults: killing nodes and network traffic loss
-    + Problems found (that the
-      [dejafu](https://hackage.haskell.org/package/dejafu) tests didn't find):
-        - XXX: ?
 
+---
 
-* IOHK's Cardano wallet
+# IOHK's blockchain database
+
+* IOHK's blockchain database
     + File system mock tested against real file system
     + Database tests built on top of file system mock
     + Fault are injected into the file system mock
-    + Problems found:
-        - XXX: ?
 
 ---
 
@@ -208,15 +279,7 @@ assert(file_fits("tmpfile") == false);
 * [Jepsen](https://jepsen.io/)-like tests: parallel state machine testing with
   fault injection and linearisability
 
----
-
-# Related work
-
-* Chaos engineering (Netflix)
-
-* Jepsen (Kyle "aphyr" Kingsbury)
-
-[://]: https://thenewstack.io/chaos-tools-and-techniques-for-testing-the-tidb-distributed-newsql-database/
+* Lineage-driven fault injection [@alvaro15]
 
 ---
 
@@ -230,7 +293,7 @@ assert(file_fits("tmpfile") == false);
 * Exceptional circumstances are often edge cases and hence less likely to be
   considered when writing the program
 
-* Exceptional circumstances will nevertheless occur in production
+* Exceptional circumstances will nevertheless occur in any long running system
 
 * By combining fault injection with property based testing we force ourselves to
   consider these exceptional cases
