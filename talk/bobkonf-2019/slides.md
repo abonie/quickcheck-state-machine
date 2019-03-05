@@ -28,7 +28,6 @@
 * Examples using
     + [`quickcheck-state-machine`](https://github.com/advancedtelematic/quickcheck-state-machine)
       Haskell library for property based testing
-    + `libfiu` for fault injection
     + The principles are general and tool independent
 
 ---
@@ -114,7 +113,6 @@ postcondition _m       _act _resp      = True
 
 ![State machine model](../bobkonf-2018/image/asm.jpg)\
 
-
 ---
 
 # Fault injection
@@ -184,6 +182,13 @@ assert(file_fits("tmpfile") == false);
 
 ---
 
+# Over-the-air updates (picture)
+
+![OTA](image/ota.jpg)\
+
+
+---
+
 # Over-the-air updates
 
 ```haskell
@@ -194,16 +199,16 @@ data Fault = Network | Kill | GCIOPause | ProcessPrio
            | ReorderReq | SkewClock | RmFile | DamageFile
            | Libfiu (Either Syscall Failpoint)
 
-inject :: Fault -> IO () -- Pseudo code
+inject :: Fault -> IO ()  -- Pseudo code
 inject Network     = call "iptables -j DROP $IP"
 inject Kill        = call "kill -9 $PID"
 inject GCIOPause   = call "killall -s STOP $PID"
 inject ProcessPrio = call "renice -p $PID"
-inject ReorderReq  = call "some proxy"
+inject ReorderReq  = call "someproxy" -- Which?
 inject SkewClock   = call "faketime $SKEW"
 inject RmFile      = call "rm -f $FILE"
-inject DamageFile  = call "echo 0 >> $FILE"
-inject Libfiu      = call "libfiu-ctrl $FAULT $PID"
+inject DamageFile  = call "echo 0 > $FILE"
+inject Libfiu      = call "fiu-ctrl -c $FAULT $PID"
 
 ```
 
@@ -245,7 +250,7 @@ prop_reliable = forAllActions $ \acts -> do
              , Check, Download, Install, Reboot ]
              model'
   update' <- currentUpdate device
-  assert (update' == update)
+  assert (update' == update) -- Always able to recover
 ```
 
 ---
