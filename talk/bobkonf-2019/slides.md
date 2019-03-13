@@ -1,7 +1,10 @@
-% State machine modelling and property based testing combined with fault injection
-% Stevan Andjelkovic
-% 2019.3.22, BOBKonf (Berlin)
-
+---
+title: State machine modelling and property based testing combined with fault injection
+author: Stevan Andjelkovic
+date: 2019.3.22, BOBKonf (Berlin)
+header-includes:
+  - \definecolor{links}{HTML}{2A1B81}
+  - \hypersetup{colorlinks,linkcolor=,urlcolor=links}
 ---
 
 # Motivation
@@ -96,11 +99,11 @@ transition _m Delete     = Nothing
 ```haskell
 data Response = Unit () | String String
 
-semantics :: Action -> IO Response
-semantics Create     = Unit   <$> httpReq POST   url
-semantics Read       = String <$> httpReq GET    url
-semantics (Update s) = Unit   <$> httpReq PUT    url s
-semantics Delete     = Unit   <$> httpReq DELETE url
+semantics :: Action -> IO Response -- Pseudo code
+semantics Create     = Unit   <$> httpReqPost   url
+semantics Read       = String <$> httpReqGet    url
+semantics (Update s) = Unit   <$> httpReqPut    url s
+semantics Delete     = Unit   <$> httpReqDelete url
 
 postcondition :: Model -> Action -> Response -> Bool
 postcondition (Just m) Read (String s) = s == m
@@ -112,6 +115,7 @@ postcondition _m       _act _resp      = True
 # State machine modelling as a picture
 
 ![State machine model](../bobkonf-2018/image/asm.jpg)\
+
 
 ---
 
@@ -176,7 +180,7 @@ assert(file_fits("tmpfile") == false);
 # Examples
 
 * Over-the-air updates of cars (my workplace)
-* Adjoint's
+* Adjoint Inc's
   [libraft](https://github.com/adjoint-io/raft/blob/master/test/QuickCheckStateMachine.hs)
 * IOHK's blockchain [database](https://www.well-typed.com/blog/2019/01/qsm-in-depth/)
 
@@ -242,7 +246,7 @@ postcondition m act resp = case (fault m, act) of
 prop_reliable :: Property
 prop_reliable = forAllActions $ \acts -> do
   (device, update) <- setup
-  schedule update device
+  scheduleUpdateToDevice update device
   let model = initModel { device = Just device }
   (model', result) <- runActions acts model
   assert (result == Success) -- Post-conditions hold
@@ -255,22 +259,47 @@ prop_reliable = forAllActions $ \acts -> do
 
 ---
 
-# Adjoint's `libraft`
+# Adjoint Inc's `libraft`
 
-* Adjoint's
-  [libraft](https://github.com/adjoint-io/raft/blob/master/test/QuickCheckStateMachine.hs)
-    + Simplified think of it as distributed and fault-tolerant "CRUD applicaiton
-      example"
-    + Injected faults: killing nodes and network traffic loss
+* Raft is a consensus algorithm (complicated)
+* Simplified: how do we get a bunch of nodes to agree on a value?
+* Simplified:
+    1. The nodes elect a leader
+    2. All requests get forwarded to the leader
+    3. Leader makes sure changes get propagated to the followers
+* Complications (faults we inject):
+    + Nodes joining and parting
+    + Network traffic loss
+    + Network partitions
+    + ...
 
 ---
 
-# IOHK's blockchain database
+# Simplified consensus in pictures
 
-* IOHK's blockchain database
-    + File system mock tested against real file system
-    + Database tests built on top of file system mock
-    + Fault are injected into the file system mock
+![Consensus](image/consensus.jpg)\
+
+
+---
+
+# IOHK's blockchain database (picture)
+
+![Database1](image/fs_db1.jpg)\
+
+
+---
+
+# IOHK's blockchain: testing part 1
+
+![Database2](image/fs_db2.jpg)\
+
+
+---
+
+# IOHK's blockchain: testing part 2
+
+![Database3](image/fs_db3.jpg)\
+
 
 ---
 
