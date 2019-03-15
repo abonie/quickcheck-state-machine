@@ -9,17 +9,22 @@ header-includes:
 
 # Motivation
 
-* Fault tolerant (distributed) systems, hard to get right (many edge cases)
+* Failures can always happen (network issues, I/O failures, etc...)
+* Problem: when we test our system (rare) failures usually don't happen
+* In large scale systems rare failures will happen for sure (the law of large numbers)
+* Goal: find bugs related to rare failures before our users!
 
-* *Simple Testing Can Prevent Most Critical Failures* paper [@yuan14]
+---
 
-    + The authors studied 198 randomly sampled user-reported failures from five
-      distributed systems (Cassandra, HBase, HDFS, MapReduce, Redis)
+# *Simple Testing Can Prevent Most Critical Failures* paper [@yuan14]
 
-    + "Almost all catastrophic failures (48 in total – 92%) are the result of
-      incorrect handling of non-fatal errors explicitly signalled in software."
+* The authors studied 198 randomly sampled user-reported failures from five
+  distributed systems (Cassandra, HBase, HDFS, MapReduce, Redis)
 
-    + Example: `... } catch (Exception e) { LOG.error(e); // TODO: we should retry here! }`
+* "Almost all catastrophic failures (48 in total – 92%) are the result of
+  incorrect handling of non-fatal errors explicitly signalled in software."
+
+* Example: `... } catch (Exception e) { LOG.error(e); // TODO: we should retry here! }`
 
 ---
 
@@ -330,7 +335,7 @@ prop_reliable = forAllActions $ \acts -> do
 * Exceptional circumstances will nevertheless occur in any long running system
 
 * By combining fault injection with property based testing we force ourselves to
-  consider these exceptional cases
+  consider these exceptional cases, before our users report them as a bug!
 
 ---
 
