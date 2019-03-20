@@ -53,22 +53,39 @@ header-includes:
 * Property based tests
 
 ```haskell
-      prop :: [Int] -> Bool
-      prop xs = reverse (reverse xs) == xs
+      prop_reverse :: [Int] -> Bool
+      prop_reverse xs = reverse (reverse xs) == xs
 ```
 
 . . .
 
-* Proof by (structural) induction
+* Running the tests
 
-      $\quad\;\forall xs(\textsf{reverse}(\textsf{reverse}(xs)) = xs)$
+```haskell
+      > quickCheck prop_reverse
+      +++ OK, passed 100 tests.
+
+```
+
+---
+
+# Recap: property based testing (bad)
+
+
+```haskell
+prop_bad :: [Int] -> Bool
+prop_bad xs = reverse xs == xs
+
+
+```
 
 . . .
 
-* Type theory
-
 ```haskell
-      proof : forall xs -> reverse (reverse xs) == xs
+> quickCheck prop_bad
+*** Failed! Falsifiable (after 5 tests and 2 shrinks):
+[0,1]
+[1,0] /= [0,1]
 ```
 
 ---
@@ -121,6 +138,28 @@ postcondition _m       _act _resp      = True
 
 ![State machine model](../bobkonf-2018/image/asm.jpg)\
 
+
+---
+
+# State machine modelling counterexample
+
+```haskell
+> quickCheck prop_stateMachine
+*** Failed! Falsifiable (after 9 tests and 3 shrinks):
+[Create, Update "apa", Read]
+
+Nothing
+  == Create ==> Unit ()
+Just ""
+  == Update "apa" ==> Unit ()
+Just "apa"
+  == Read ==> String ""
+Just "apa"
+```
+```
+Postcondition failed for Read, got "" from the system
+but expected "apa".
+```
 
 ---
 
