@@ -24,7 +24,12 @@ header-includes:
 * "Almost all catastrophic failures (48 in total – 92%) are the result of
   incorrect handling of non-fatal errors explicitly signalled in software."
 
-* Example: `... } catch (Exception e) { LOG.error(e); // TODO: we should retry here! }`
+* Example:
+```java
+    ... } catch (Exception e) {
+      LOG.error(e); // TODO: we should retry here!
+    }
+```
 
 ---
 
@@ -363,8 +368,6 @@ prop_reliable = forAllActions $ \acts -> do
 ---
 
 # Summary
-
-* Fault injection can help causes exceptional circumstances
 
 * Exceptional circumstances are by definition rare and hence less likely to be
   tested
