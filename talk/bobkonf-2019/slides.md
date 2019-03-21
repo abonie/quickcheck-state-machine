@@ -9,7 +9,7 @@ header-includes:
 
 # Motivation
 
-* Failures can always happen (network issues, I/O failures, etc...)
+* Failures can always happen (network issues, I/O failures, processes killed, etc...)
 * Problem: when we test our system (rare) failures usually don't happen
 * In large scale systems rare failures will happen for sure (the law of large numbers)
 * Goal: find bugs related to rare failures before our users!
@@ -100,7 +100,7 @@ prop_bad xs = reverse xs == xs
 
 ---
 
-# Example: CRUD application
+# Example: CRUD web application
 
 ```haskell
 data Action = Create | Read | Update String | Delete
@@ -226,6 +226,7 @@ assert(file_fits("tmpfile") == false);
 * Over-the-air updates of cars (my workplace)
 * Adjoint Inc's
   [libraft](https://github.com/adjoint-io/raft/blob/master/test/QuickCheckStateMachine.hs)
+  (consensus algorithm)
 * IOHK's blockchain [database](https://www.well-typed.com/blog/2019/01/qsm-in-depth/)
 
 ---
@@ -305,15 +306,15 @@ prop_reliable = forAllActions $ \acts -> do
 
 # Adjoint Inc's `libraft`
 
-* Raft is a consensus algorithm (complicated)
+* Raft is a consensus algorithm
 * Simplified: how do we get a bunch of nodes to agree on a value?
 * Simplified:
     1. The nodes elect a leader
     2. All requests get forwarded to the leader
     3. Leader makes sure changes get propagated to the followers
 * Complications (faults we inject):
-    + Nodes joining and parting
     + Network traffic loss
+    + Nodes joining and parting
     + Network partitions
     + ...
 
@@ -361,7 +362,7 @@ prop_reliable = forAllActions $ \acts -> do
 
 ---
 
-# Conclusion
+# Summary
 
 * Fault injection can help causes exceptional circumstances
 
